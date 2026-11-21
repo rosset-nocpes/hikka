@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import auth_required
 from app.database import get_session
-from . import service, grouping
+from . import service, utils
 from app.models import Anime
 from app.errors import Abort
 from app.models import User
@@ -28,7 +28,7 @@ async def validate_notification(
 async def validate_notification_group(
     group_reference: str,
 ) -> tuple[str, str, date]:
-    if not (parsed := grouping.parse_group_reference(group_reference)):
+    if not (parsed := utils.parse_group_reference(group_reference)):
         raise Abort("notification", "not-found")
 
     notification_type, subkey, day = parsed

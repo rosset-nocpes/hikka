@@ -24,13 +24,6 @@ class NotificationTypeEnum(str, Enum):
     thirdparty_login = constants.NOTIFICATION_THIRDPARTY_LOGIN
 
 
-VOTE_NOTIFICATION_TYPES = (
-    constants.NOTIFICATION_COMMENT_VOTE,
-    constants.NOTIFICATION_COLLECTION_VOTE,
-    constants.NOTIFICATION_ARTICLE_VOTE,
-)
-
-
 # Responses
 class NotificationResponse(CustomModel):
     notification_type: NotificationTypeEnum
@@ -44,7 +37,7 @@ class NotificationResponse(CustomModel):
     def hide_downvoter(self):
         # Downvotes are anonymous; rows older than that rule still store the voter
         if (
-            self.notification_type in VOTE_NOTIFICATION_TYPES
+            self.notification_type in constants.NOTIFICATION_VOTE_TYPES
             and (self.data.get("user_score") or 0) < 0
         ):
             self.initiator_user = None
@@ -80,7 +73,9 @@ class NotificationGroupResponse(CustomModel):
         description="Distinct things the members point at (comments, edits, collections, ...)"
     )
     notifications: list[NotificationResponse] = Field(
-        description="Newest members first, up to 50"
+        description=(
+            f"Newest members first, up to {constants.NOTIFICATION_GROUP_LIMIT}"
+        )
     )
 
 

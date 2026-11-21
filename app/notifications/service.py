@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.utils import utcnow
 from datetime import date
-from . import grouping
+from app import constants
 from uuid import UUID
+from . import utils
 
 from app.models import (
     Notification,
@@ -80,8 +81,8 @@ async def get_unseen_count(session: AsyncSession, user: User):
 
 
 def _user_groups_query(user: User):
-    subkey = grouping.group_subkey().label("subkey")
-    day = grouping.group_day().label("day")
+    subkey = utils.group_subkey().label("subkey")
+    day = utils.group_day().label("day")
 
     return (
         select(
@@ -93,11 +94,11 @@ def _user_groups_query(user: User):
             func.count(Notification.id)
             .filter(Notification.seen == False)  # noqa: E712
             .label("unseen"),
-            func.count(distinct(grouping.group_actor())).label("actors"),
-            func.count(distinct(grouping.group_target())).label("targets"),
+            func.count(distinct(utils.group_actor())).label("actors"),
+            func.count(distinct(utils.group_target())).label("targets"),
             array_agg(
                 aggregate_order_by(Notification.id, desc(Notification.created))
-            )[1 : grouping.GROUP_NOTIFICATIONS_LIMIT].label("ids"),
+            )[1 : constants.NOTIFICATION_GROUP_LIMIT].label("ids"),
         )
         .filter(Notification.user_id == user.id)
         .group_by(Notification.notification_type, subkey, day)
@@ -142,7 +143,7 @@ async def get_user_notification_groups(
 
     return [
         {
-            "reference": grouping.make_group_reference(
+            "reference": utils.make_group_reference(
                 row.notification_type, row.subkey, row.day
             ),
             "notification_type": row.notification_type,
@@ -175,8 +176,8 @@ async def notification_group_seen(
         .filter(
             Notification.user_id == user.id,
             Notification.notification_type == notification_type,
-            grouping.group_subkey() == subkey,
-            grouping.group_day() == day,
+            utils.group_subkey() == subkey,
+            utils.group_day() == day,
             Notification.seen == False,  # noqa: E712
         )
         .values(updated=utcnow(), seen=True)
